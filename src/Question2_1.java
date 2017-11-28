@@ -6,6 +6,7 @@ import java.util.PriorityQueue;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -71,7 +72,7 @@ public class Question2_1 {
 			
 			PriorityQueue<StringAndInt> priorityQueue = new PriorityQueue<StringAndInt>();
 			for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
-				priorityQueue.add(new StringAndInt(entry.getKey(), entry.getValue()));
+				priorityQueue.add(new StringAndInt(new Text(entry.getKey()), new IntWritable(entry.getValue())));
 			}
 			
 			

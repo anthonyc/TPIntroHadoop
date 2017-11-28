@@ -6,6 +6,7 @@ import java.util.PriorityQueue;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -19,7 +20,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 public class Question2_2 {
 	
-	public static class TagCountMapper extends Mapper<LongWritable, Text, Text, Text> {
+	public static class TagCountMapper extends Mapper<LongWritable, Text, Text, StringAndInt> {
 		@Override
 		protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			String[] line = value.toString().split("\t");
@@ -46,22 +47,22 @@ public class Question2_2 {
 			if (country instanceof Country) {
 				for (String tag : line[8].split(",")) {
 					if (tag != null && !tag.isEmpty()) {
-						context.write(new Text(country.toString()), new Text(URLDecoder.decode(tag, "utf-8")));
+						context.write(new Text(country.toString()), new StringAndInt(new Text(URLDecoder.decode(tag, "utf-8")), new IntWritable(1)));
 					}
 				}
 			}
 		}
 	}
 	
-	public static class TagCountCombiner extends Reducer<Text, Text, Text, Text> {
+	public static class TagCountCombiner extends Reducer<Text, StringAndInt, Text, StringAndInt> {
 		@Override
-		protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-			System.out.println("========Reduce===========");
+		protected void reduce(Text key, Iterable<StringAndInt> values, Context context) throws IOException, InterruptedException {
+			System.out.println("========Combine===========");
 			System.out.println("key : " + key);
 			System.out.println("=========================");
 			HashMap<String, Integer> hashMap = new HashMap<String, Integer>();
 			
-			for (Text value : values) {
+			for (StringAndInt value : values) {
 				if (hashMap.containsKey(value.toString())) {
 					hashMap.put(value.toString(), hashMap.get(value.toString()).intValue() + 1);
 				} else {
@@ -69,44 +70,24 @@ public class Question2_2 {
 				}
 			}
 			
-			PriorityQueue<StringAndInt> priorityQueue = new PriorityQueue<StringAndInt>();
 			for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
-				priorityQueue.add(new StringAndInt(entry.getKey(), entry.getValue()));
+				context.write(key, new StringAndInt(new Text(entry.getKey()), new IntWritable(entry.getValue())));
 			}
 			
-			
-			int numbersOfPopularTag = Integer.parseInt(context.getConfiguration().get("numbersOfPopularTag"));
-			if (numbersOfPopularTag > priorityQueue.size()) {
-				numbersOfPopularTag = priorityQueue.size();
-			}
-			
-			for (int i=0; i < numbersOfPopularTag; i++) {
-				context.write(key, new Text(priorityQueue.poll().toString()));
-			}
-			
-			System.out.println("======Fin Reduce=========");
+			System.out.println("======Fin Combine=========");
 		}
 	}
 	
-	public static class TagCountReducer extends Reducer<Text, Text, Text, Text> {
+	public static class TagCountReducer extends Reducer<Text, StringAndInt, Text, Text> {
 		@Override
-		protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+		protected void reduce(Text key, Iterable<StringAndInt> values, Context context) throws IOException, InterruptedException {
 			System.out.println("========Reduce===========");
 			System.out.println("key : " + key);
 			System.out.println("=========================");
-			HashMap<String, Integer> hashMap = new HashMap<String, Integer>();
-			
-			for (Text value : values) {
-				if (hashMap.containsKey(value.toString())) {
-					hashMap.put(value.toString(), hashMap.get(value.toString()).intValue() + 1);
-				} else {
-					hashMap.put(value.toString(), 1);
-				}
-			}
-			
 			PriorityQueue<StringAndInt> priorityQueue = new PriorityQueue<StringAndInt>();
-			for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
-				priorityQueue.add(new StringAndInt(entry.getKey(), entry.getValue()));
+			
+			for (StringAndInt value : values) {
+				priorityQueue.add(new StringAndInt(new Text(value.toString()), new IntWritable(value.getNumberOfOccurences())));
 			}
 			
 			
@@ -136,11 +117,11 @@ public class Question2_2 {
 		
 		job.setMapperClass(TagCountMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Text.class);
+		job.setMapOutputValueClass(StringAndInt.class);
 		
 		job.setCombinerClass(TagCountCombiner.class);
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
+		job.setOutputValueClass(StringAndInt.class);
 		
 		job.setReducerClass(TagCountReducer.class);
 		job.setOutputKeyClass(Text.class);
