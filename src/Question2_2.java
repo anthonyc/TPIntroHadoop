@@ -112,7 +112,7 @@ public class Question2_2 {
 		String numbersOfPopularTag = otherArgs[2];
 		configuration.set("numbersOfPopularTag", numbersOfPopularTag);
 		
-		Job job = Job.getInstance(configuration, "Question1_1");
+		Job job = Job.getInstance(configuration, "Question2_2");
 		job.setJarByClass(Question2_2.class);
 		
 		job.setMapperClass(TagCountMapper.class);

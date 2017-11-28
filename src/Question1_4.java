@@ -42,7 +42,7 @@ public class Question1_4 {
 		String input = otherArgs[0];
 		String output = otherArgs[1];
 		
-		Job job = Job.getInstance(configuration, "Question1_1");
+		Job job = Job.getInstance(configuration, "Question1_4");
 		job.setJarByClass(Question1_4.class);
 		
 		job.setMapperClass(WordCountMapper.class);
